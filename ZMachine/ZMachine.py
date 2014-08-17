@@ -1,6 +1,7 @@
 from struct import unpack, pack
 from opcodeList import opCodes
-
+import objects
+from screen import Screen
 
 # http://inform-fiction.org/zmachine/standards/z1point0/sect11.html
 
@@ -88,6 +89,8 @@ class ZMachine:
 
 		self.header = Header(self)
 
+		self.screen = Screen(self)
+
 		self.setup()
 		self.run()
 
@@ -100,11 +103,19 @@ class ZMachine:
 	def setup(self):
 		self.pc = self.header.initPC
 		self.currentScope = RoutineScope(self, None, None, [], -1, -1)
+		self.screen.init()
 		pass
 
 	def run(self):
 		while True:
-			self.decodeOp()
+			print("")
+			opCode = self.readBytePC()
+			print('address:', hex(self.pc-1),'opCode:', opCode, hex(opCode))
+
+			opc = opCodes[opCode](self)
+			print('opCode', opc)
+			opc.decode(self)
+			opc.call(self)
 		pass
 
 	def readByte(self, address):
@@ -164,11 +175,17 @@ class ZMachine:
 		if self.header.version <= 7:
 			# verify!
 			return address * 4 + self.header.staticStrings * 8
-		if self.header.version <= 3:
+		if self.header.version <= 8:
 			return address * 8
 
 	def call(self, address, param, returnAddress, returnValue):
-		address = self.unpackAddressRoutine(address.load())
+		targetAddress = address.load()
+
+		if targetAddress == 0:
+			print('ABORT CALL --> DEST == 0')
+			returnValue.store(0)
+			return
+		address = self.unpackAddressRoutine(targetAddress)
 		print("calling", address, hex(address), 'params:', param, 'old stack:', id(self.currentScope.stack))
 		self.currentScope = RoutineScope(self, self.currentScope, address, param, returnAddress, returnValue)
 		print('new stack:', id(self.currentScope.stack))
@@ -184,21 +201,35 @@ class ZMachine:
 		self.pc = oldScope.returnAddress
 		oldScope.returnValue.store(value.load())
 
-	def decodeOp(self):
-		print("")
-		opCode = self.readBytePC()
-		print('opCode:', opCode, hex(opCode))
+	def getPropertiesLength(self):
+		if self.header.version < 4:
+			return 31 * 2
+		return 63 * 2
 
-		opc = opCodes[opCode](self)
-		print('opCode', opc)
-		opc.decode(self)
-		opc.call(self)
+	def getObjectLength(self):
+		if self.header.version < 4:
+			return 9
+		return 14
 
-		pass
+	def getObject(self, objectNum):
+		objectsStartAddress = self.header.objectTable + self.getPropertiesLength()
+		objectAddress = objectsStartAddress + self.getObjectLength() * (objectNum-1)
+		
+		return objects.Object(self, objectAddress, objectNum)
 
 def main():
-	basePath = '../'
-	fileName = 'Enchanter.z3'
+	ff = 0
+
+	if ff == 0:
+		basePath = '../'
+		fileName = 'Enchanter.z3'
+	else:
+		basePath = 'F:/zork/'
+
+		if ff == 1:
+			fileName = 'zork.z3'
+		if ff == 2:
+			fileName = 'hhgg.z3'
 
 	zm = ZMachine(basePath, fileName)
 
