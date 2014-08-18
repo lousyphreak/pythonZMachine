@@ -32,6 +32,9 @@
     <Compile Include="opcodeCode.py" />
     <Compile Include="opcodeDecode.py" />
     <Compile Include="opcodeList.py" />
+    <Compile Include="textParser.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="screen.py">
       <SubType>Code</SubType>
     </Compile>

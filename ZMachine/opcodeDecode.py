@@ -1,5 +1,5 @@
 from enum import Enum
-
+#from opcodeList import opCodesExt
 
 class VarType(Enum):
 	LongConstant = 0
@@ -7,6 +7,7 @@ class VarType(Enum):
 	Variable = 2
 
 def parseVariable(machine, value):
+	value = makeUnsigned(value, 1)
 	if value==0:
 		return StackValue(machine.currentScope.stack)
 	elif value < 16:
@@ -23,24 +24,35 @@ def decodeJump(machine):
 
 	target = v1 & 0x3F
 	if (v1 >> 6) & 1 == 0:
-		target << 6
+		target = target << 8
 		v2 = machine.readBytePC()
 		target |= v2
 	
-	if target > 1:
+	if target > 0x2000: # negative jump
+		target -= 0x4000
+
+	if target > 1 or target < 0:
 		startAddress = machine.pc-2
-		t14 = target >> 14
-		t13 = target >> 13
-		t12 = target >> 12
-		t11 = target >> 11
-		if target > 5000:
-			target = 65536 - target
 		target += startAddress
 	return cond, target
 
+def makeSigned(value, bytes = 2):
+	value = makeUnsigned(value, bytes)
+	shift = bytes * 8 - 1
+	if (value >> shift) == 1:
+		mask = 1 << (bytes * 8)
+		value = value - mask
+
+	return value
+
+def makeUnsigned(value, bytes = 2):
+	mask = (1 << (bytes * 8)) -1
+
+	return value & mask
+
 class ConstValue:
-	def __init__(self, value):
-		self.value = value
+	def __init__(self, value, bytes):
+		self.value = makeSigned(value, bytes)
 
 	def load(self):
 		return self.value
@@ -61,16 +73,20 @@ class StackValue:
 
 	def load(self):
 		print('StackValue.load', self.stack, id(self.stack))
+		if len(self.stack) < 1:
+			print('LOAD FROM EMPTY STACK!')
+			return 0
+
 		return self.stack.pop()
 
 	def store(self, value):
 		print('StackValue.store:', self.stack, hex(value), 'id:', id(self.stack))
-		self.stack.append(value)
+		self.stack.append(makeSigned(value, 2))
 		print('StackValue.store:', self.stack)
 		pass
 
 	def storeB(self, value):
-		return self.store(value)
+		return self.store(makeSigned(value, 1))
 
 	def __repr__(self):
 		return self.__str__()
@@ -86,16 +102,26 @@ class LocalValue:
 		self.offset = offset
 
 	def load(self):
-		return self.locals[self.offset]
+		try:
+			return self.locals[self.offset]
+		except:
+			print("")
+			return 0;
 
-	def store(self, value):
-		self.locals[self.offset] = value
+	def store(self, value, bytes = 2):
+		self.locals[self.offset] = makeSigned(value, bytes)
+
+	def storeB(self, value):
+		self.store(value, 1)
 
 	def __repr__(self):
 		return self.__str__()
 
 	def __str__(self):
-		return 'LocalValue: L{0}({1})'.format(hex(self.offset), hex(self.locals[self.offset]))
+		try:
+			return 'LocalValue: L{0}({1})'.format(hex(self.offset), hex(self.locals[self.offset]))
+		except:
+			print("")
 
 class GlobalValue:
 	def __init__(self, machine, offset):
@@ -103,10 +129,13 @@ class GlobalValue:
 		self.offset = offset
 
 	def load(self):
-		return self.machine.readWord(self.machine.header.globals + self.offset*2)
+		return makeSigned(self.machine.readWord(self.machine.header.globals + self.offset*2))
 
 	def store(self, value):
-		return self.machine.writeWord(self.machine.header.globals + self.offset*2, value)
+		return self.machine.writeWord(self.machine.header.globals + self.offset*2, makeUnsigned(value))
+
+	def storeB(self, value):
+		return self.machine.writeWord(self.machine.header.globals + self.offset*2, makeUnsigned(value, 1))
 
 	def __repr__(self):
 		return self.__str__()
@@ -140,13 +169,13 @@ class Opcode():
 
 class Opcode_SC_SC(Opcode):
 	def decode(self, machine):
-		v1 = ConstValue(machine.readBytePC())
-		v2 = ConstValue(machine.readBytePC())
+		v1 = ConstValue(machine.readBytePC(), 1)
+		v2 = ConstValue(machine.readBytePC(), 1)
 		self.argVals = [v1,v2]
 
 class Opcode_SC_V(Opcode):
 	def decode(self, machine):
-		v1 = ConstValue(machine.readBytePC())
+		v1 = ConstValue(machine.readBytePC(), 1)
 		variable = machine.readBytePC()
 		v2 = parseVariable(machine, variable)
 
@@ -158,7 +187,7 @@ class Opcode_V_SC(Opcode):
 	def decode(self, machine):
 		variable = machine.readBytePC()
 		v1 = parseVariable(machine, variable)
-		v2 = ConstValue(machine.readBytePC())
+		v2 = ConstValue(machine.readBytePC(), 1)
 
 		self.argVals = [v1,v2]
 
@@ -178,13 +207,13 @@ class Opcode_V_V(Opcode):
 
 class Opcode_LC(Opcode):
 	def decode(self, machine):
-		v1 = ConstValue(machine.readWordPC())
+		v1 = ConstValue(machine.readWordPC(), 2)
 		self.argVals = [v1]
 
 
 class Opcode_SC(Opcode):
 	def decode(self, machine):
-		v1 = ConstValue(machine.readBytePC())
+		v1 = ConstValue(machine.readBytePC(), 1)
 		self.argVals = [v1]
 
 
@@ -213,6 +242,8 @@ class Opcode_2OP_VAR(Opcode):
 
 class Opcode_VAR(Opcode):
 	def decode(self, machine):
+		if machine.pc == 0xfb2:
+			print('')
 		argType1 = machine.readBytePC()
 		args = decodeArgTypes(argType1)
 
@@ -220,10 +251,10 @@ class Opcode_VAR(Opcode):
 		for arg in args:
 			if arg is VarType.LongConstant:
 				var = machine.readWordPC()
-				self.argVals.append(ConstValue(var))
+				self.argVals.append(ConstValue(var, 2))
 			if arg is VarType.ShortConstant:
 				var = machine.readBytePC()
-				self.argVals.append(ConstValue(var))
+				self.argVals.append(ConstValue(var, 1))
 			if arg is VarType.Variable:
 				var = machine.readBytePC()
 				self.argVals.append(parseVariable(machine, var))
@@ -241,26 +272,56 @@ class Opcode_VAR2(Opcode):
 		for arg in args:
 			if arg is VarType.LongConstant:
 				var = machine.readWordPC()
-				self.argVals.append(ConstValue(var))
+				self.argVals.append(ConstValue(var, 2))
 			if arg is VarType.ShortConstant:
 				var = machine.readBytePC()
-				self.argVals.append(ConstValue(var))
+				self.argVals.append(ConstValue(var, 1))
 			if arg is VarType.Variable:
 				var = machine.readBytePC()
-				self.argVals.append(parseVariable(machine, variable))
+				self.argVals.append(parseVariable(machine, var))
 
 		args = decodeArgTypes(argType2)
 
 		for arg in args:
 			if arg is VarType.LongConstant:
 				var = machine.readWordPC()
-				self.argVals.append(ConstValue(var))
+				self.argVals.append(ConstValue(var, 2))
 			if arg is VarType.ShortConstant:
 				var = machine.readBytePC()
-				self.argVals.append(ConstValue(var))
+				self.argVals.append(ConstValue(var, 1))
 			if arg is VarType.Variable:
 				var = machine.readBytePC()
-				self.argVals.append(parseVariable(machine, variable))
+				self.argVals.append(parseVariable(machine, var))
 
 		pass
 
+
+
+class Opcode_Extended(Opcode):
+	def decode(self, machine):
+		opCode = machine.readBytePC()
+		
+		self.op = self.opCodesExt[opCode]()
+
+		argType1 = machine.readBytePC()
+		args = decodeArgTypes(argType1)
+
+		self.op.machine = machine
+		self.op.argVals = []
+
+		for arg in args:
+			if arg is VarType.LongConstant:
+				var = machine.readWordPC()
+				self.op.argVals.append(ConstValue(var, 2))
+			if arg is VarType.ShortConstant:
+				var = machine.readBytePC()
+				self.op.argVals.append(ConstValue(var, 1))
+			if arg is VarType.Variable:
+				var = machine.readBytePC()
+				self.op.argVals.append(parseVariable(machine, var))
+
+
+		pass
+	def call(self, machine):
+		self.op.call(machine)
+		pass

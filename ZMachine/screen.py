@@ -90,12 +90,36 @@ class Screen:
 		
 		pass
 
+	def readText(self, maxLen):
+		text = ''
+
+		for event in pygame.event.get():
+			continue
+
+		readMore = True
+		while readMore:
+			for event in pygame.event.get():
+				if event.type == 2 and event.scancode == 28: # return
+					readMore = False
+				elif event.type == 2 and event.unicode is not '':
+					#print('KEYDOWN!', event)
+					self.printChar(event.unicode)
+					text += event.unicode
+					print(text)
+
+			self.update()
+			if len(text) >= maxLen:
+				readMore = False
+
+		self.printChar('\n')
+		return text, False
 
 	def update(self):
 		for event in pygame.event.get():
-			#print(event)
-			if event.type == pygame.QUIT:
-				sys.exit()
+		#	#print(event)
+		#	if event.type == pygame.QUIT:
+		#		sys.exit()
+			pass
 
 		self.screen.fill(self.bg)
 

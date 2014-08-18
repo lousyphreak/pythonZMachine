@@ -8,17 +8,6 @@ def init(machine):
 def getDefaultPropertyValue(machine, propID):
 	startAddress = machine.header.objectTable
 	propValue = machine.readWord(startAddress + (propID-1) * 2)
-	propValue1 = machine.readWord(startAddress + (propID) * 2)
-	propValue2 = machine.readWord(startAddress + (propID+1) * 2)
-	propValue3 = machine.readWord(startAddress + (propID+2) * 2)
-	propValue4 = machine.readWord(startAddress + (propID+3) * 2)
-	propValue5 = machine.readWord(startAddress + (propID+4) * 2)
-	propValue6 = machine.readWord(startAddress + (propID+5) * 2)
-
-	propValue31 = machine.readWord(startAddress + (propID-2) * 2)
-	propValue41 = machine.readWord(startAddress + (propID-3) * 2)
-	propValue51 = machine.readWord(startAddress + (propID-4) * 2)
-	propValue61 = machine.readWord(startAddress + (propID-5) * 2)
 	return propValue
 
 class Property:
@@ -128,17 +117,29 @@ class Object:
 
 		return ((self.attr >> bit) & 1) == 1
 
+	def clearAttr(self, attr):
+		self.setAttrOnOff(attr, False)
+		pass
+
 	def setAttr(self, attr):
+		self.setAttrOnOff(attr, True)
+		pass
+
+	def setAttrOnOff(self, attr, on):
 		if self.machine.header.version < 4:
 			bit = 31 - attr
 		else:
 			bit = 47 - attr
 
-		#oldAttr = self.attr
-		#a1 = self.hasAttr(attr)
+		oldAttr = self.attr
+		a1 = self.hasAttr(attr)
 
-		setBit = 1 << bit
-		self.attr |= setBit
+		if on:
+			setBit = 1 << bit
+			self.attr |= setBit
+		else:
+			clearBit = ~(1 << bit)
+			self.attr &= clearBit
 
 		if self.machine.header.version < 4:
 			count = 4
@@ -149,8 +150,8 @@ class Object:
 			invI = count-1-i
 			self.machine.writeByte(self.offset+i, ((self.attr)>>(invI*8)) & 0xff)
 
-		#self.attr = (self.machine.readByte(self.offset) << 24) | (self.machine.readByte(self.offset+1) << 16) | (self.machine.readByte(self.offset+2) << 8) | (self.machine.readByte(self.offset+3))
-		#a2 = self.hasAttr(attr)
+		self.attr = (self.machine.readByte(self.offset) << 24) | (self.machine.readByte(self.offset+1) << 16) | (self.machine.readByte(self.offset+2) << 8) | (self.machine.readByte(self.offset+3))
+		a2 = self.hasAttr(attr)
 		pass
 
 	def getProp(self, propID):
@@ -159,8 +160,11 @@ class Object:
 
 		return getDefaultPropertyValue(self.machine, propID)
 
-	def getPropAddr(self, prop):
-		pass
+	def getPropAddr(self, propID):
+		if propID in self.properties:
+			return self.properties[propID].addr
+
+		return 0
 
 	def setProp(self, propID, value):
 		self.properties[propID].setValue(value)

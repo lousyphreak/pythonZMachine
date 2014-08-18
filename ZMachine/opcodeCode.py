@@ -1,5 +1,8 @@
 from opcodeDecode import *
+import objects
 import zscii
+import random
+import sys
 
 
 ################################
@@ -9,19 +12,19 @@ class Opcode_Je():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
+		print('Je',self.argVals,cond,target)
+
 		v1 = self.argVals[0].load()
-		v2 = self.argVals[1].load()
 
-		print('Je',v1,v2,cond)
+		matching = False
+		for v in self.argVals[1:]:
+			v2 = v.load()
+			if (v1==v2):
+				matching = True
+				break
 
-		if (v1==v2) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+		if matching == cond:
+			machine.jump(target)
 
 		pass
 	pass
@@ -30,19 +33,13 @@ class Opcode_Jl():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
+		print('Jl',self.argVals,cond,target)
+
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
 
-		print('Jl',v1,v2,cond)
-
 		if (v1<v2) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -51,19 +48,13 @@ class Opcode_Jg():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
+		print('Jg',self.argVals,cond,target)
+
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
 
-		print('Jg',v1,v2,cond)
-
 		if (v1>v2) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -71,23 +62,19 @@ class Opcode_Jg():
 class Opcode_DecChk():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
+
+		print('DecChk', self.argVals,cond,target)
+
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
 
-		print('DecChk', v1, v2)
 		ret = parseVariable(machine, v1)
 		val = ret.load()
 		val -= 1
 		ret.store(val)
 
 		if (val < v2) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -95,23 +82,19 @@ class Opcode_DecChk():
 class Opcode_IncChk():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
+
+		print('IncChk', self.argVals, cond, target)
+
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
 
 		ret = parseVariable(machine, v1)
-		print('IncChk', self.argVals, ret)
 		val = ret.load()
 		val += 1
 		ret.store(val)
 
 		if (val > v2) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -127,18 +110,18 @@ class Opcode_Jin():
 		print('---------------------------------------------------------------------------------------------------------------------')
 		print('Jin',objectA,v2,cond)
 		if (objectA.parentId == v2) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 	pass
 
 class Opcode_Test():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
+
+		bitmap = self.argVals[0].load()
+		flags = self.argVals[1].load()
+
+		if ((bitmap & flags) == flags) == cond:
+			machine.jump(target)
 		pass
 	pass
 
@@ -184,13 +167,7 @@ class Opcode_TestAttr():
 		print('object.attr {0}.{1}'.format(object, attr))
 
 		if attr == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -210,6 +187,14 @@ class Opcode_SetAttr():
 
 class Opcode_ClearAttr():
 	def call(self, machine):
+		objectId = self.argVals[0].load()
+		attribute = self.argVals[1].load()
+
+		object = self.machine.getObject(objectId)
+		print('---------------------------------------------------------------------------------------------------------------------')
+		print('ClearAttr', object, attribute)
+
+		object.clearAttr(attribute)
 		pass
 	pass
 
@@ -295,6 +280,11 @@ class Opcode_GetPropAddr():
 
 		object = machine.getObject(objectId)
 
+		addr = object.getPropAddr(property)
+
+		print('GetPropAddr', object, property, addr)
+
+		ret.store(addr)
 		pass
 	pass
 
@@ -359,7 +349,7 @@ class Opcode_Div():
 		v2 = self.argVals[1].load()
 		print('Div', v1, v2, ret)
 
-		value = v1 / v2
+		value = int(v1 / v2)
 		ret.store(value)
 	pass
 
@@ -368,11 +358,24 @@ class Opcode_Mod():
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
 
+		print('Mod', self.argVals, ret)
+
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('Mod', v1, v2, ret)
 
 		value = v1 % v2
+
+		if v1 < 0:
+			if v2 < 0: # -13 % -5 = -2
+				value = value
+			else: # -13 % 5 = -2
+				value = value - v2
+		else:
+			if v2 < 0: # 13 % -5 = 3
+				value = value -v2
+			else: # 13 % 5 = -2
+				value = value
+
 		ret.store(value)
 	pass
 
@@ -380,11 +383,23 @@ class Opcode_Call2S():
 	def call(self, machine):
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
+		print('###############################')
+		print('oldstack',id(machine.currentScope.stack))
+		print('Call', self.argVals[0], self.argVals[1:], machine.pc, ret)
+		print('###############################')
+		machine.call(self.argVals[0], self.argVals[1:], machine.pc, ret)
+		print('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
 class Opcode_Call2N():
 	def call(self, machine):
+		print('###############################')
+		print('oldstack',id(machine.currentScope.stack))
+		print('Call', self.argVals[0], self.argVals[1:], machine.pc, None)
+		print('###############################')
+		machine.call(self.argVals[0], self.argVals[1:], machine.pc, None)
+		print('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
@@ -410,13 +425,7 @@ class Opcode_Jz():
 		print('Jz',self.argVals,cond)
 
 		if (v1==0) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -435,13 +444,7 @@ class Opcode_GetSibling():
 		ret.store(object.siblingId)
 
 		if (object.siblingId==0) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 
 		pass
 	pass
@@ -460,13 +463,7 @@ class Opcode_GetChild():
 		ret.store(object.childId)
 
 		if (object.childId==0) == cond:
-			if target == 0:
-				print('RFalse!')
-				machine.ret(ConstValue(0))
-				return
-
-			print('jumping!')
-			machine.pc = target
+			machine.jump(target)
 		pass
 	pass
 
@@ -489,16 +486,37 @@ class Opcode_GetPropLen():
 	def call(self, machine):
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
+
+		propertyAddress = self.argVals[0].load()
+
+		if propertyAddress == 0:
+			print('GetPropLen 0', ret)
+			ret.store(0)
+		else:
+			prop = objects.Property(machine, propertyAddress)
+			print('GetPropLen', prop, prop.size, ret)
+
+			ret.store(prop.size)
 		pass
 	pass
 
 class Opcode_Inc():
 	def call(self, machine):
+		ret = parseVariable(machine, self.argVals[0].load())
+		var = ret.load()
+		print('Inc', ret)
+		var += 1
+		ret.store(var)
 		pass
 	pass
 
 class Opcode_Dec():
 	def call(self, machine):
+		ret = parseVariable(machine, self.argVals[0].load())
+		var = ret.load()
+		print('Dec', ret)
+		var -= 1
+		ret.store(var)
 		pass
 	pass
 
@@ -548,7 +566,7 @@ class Opcode_Jump():
 		target = (machine.pc + target) % 0x10000
 		print('jump target:', hex(target))
 
-		machine.pc = target
+		machine.jump(target)
 		pass
 	pass
 
@@ -568,13 +586,32 @@ class Opcode_Load():
 	def call(self, machine):
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
+
+		v1 = parseVariable(machine, self.argVals[0].load())
+
+		ret.store(v1.load())
 		pass
 	pass
 
 class Opcode_Not():
 	def call(self, machine):
-		variable = machine.readBytePC()
-		ret = parseVariable(machine, variable)
+		if machine.header.version > 4:
+			print('###############################')
+			print('oldstack',id(machine.currentScope.stack))
+			print('Call', self.argVals[0], [], machine.pc, None)
+			print('###############################')
+			machine.call(self.argVals[0], [], machine.pc, None)
+			print('newstack',id(machine.currentScope.stack))
+
+		else:
+			variable = machine.readBytePC()
+			ret = parseVariable(machine, variable)
+
+			v1 = self.argVals[0].load()
+			print('Not', v1, ret)
+
+			value = ~v1&0xffff
+			ret.store(value)
 		pass
 	pass
 
@@ -589,7 +626,7 @@ class Opcode_RTrue():
 		print('new pc:', hex(machine.currentScope.returnAddress))
 		print('###############################')
 		
-		machine.ret(ConstValue(1))
+		machine.ret(ConstValue(1, 1))
 		pass
 	pass
 
@@ -600,7 +637,7 @@ class Opcode_RFalse():
 		print('new pc:', hex(machine.currentScope.returnAddress))
 		print('###############################')
 		
-		machine.ret(ConstValue(0))
+		machine.ret(ConstValue(0, 1))
 		pass
 	pass
 
@@ -616,6 +653,12 @@ class Opcode_Print():
 
 class Opcode_PrintRet():
 	def call(self, machine):
+		bytes, string = zscii.decodeString(machine, machine.pc)
+		machine.screen.print(string)
+		machine.pc += bytes
+
+		print('PrintRet', string)
+		machine.ret(ConstValue(1, 1))
 		pass
 	pass
 
@@ -649,7 +692,7 @@ class Opcode_RetPopped():
 		print('new pc:', hex(machine.currentScope.returnAddress))
 		print('###############################')
 		value = machine.currentScope.stack.pop()
-		machine.ret(ConstValue(value))
+		machine.ret(ConstValue(value, 1))
 		pass
 	pass
 
@@ -660,6 +703,7 @@ class Opcode_Pop():
 
 class Opcode_Quit():
 	def call(self, machine):
+		sys.exit(0)
 		pass
 	pass
 
@@ -678,11 +722,6 @@ class Opcode_ShowStatus():
 class Opcode_Verify():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
-		pass
-	pass
-
-class Opcode_Extended():
-	def call(self, machine):
 		pass
 	pass
 
@@ -742,6 +781,18 @@ class Opcode_PutProp():
 
 class Opcode_SRead():
 	def call(self, machine):
+		if machine.header.version > 4:
+			variable = machine.readBytePC()
+			ret = parseVariable(machine, variable)
+			ret.store(13)
+
+		if machine.header.version < 4:
+			machine.updateStatus()
+
+		text = self.argVals[0].load()
+		parse = self.argVals[1].load()
+
+		machine.readCommand(text, parse)
 		pass
 	pass
 
@@ -773,7 +824,19 @@ class Opcode_PrintNum():
 class Opcode_Random():
 	def call(self, machine):
 		variable = machine.readBytePC()
-		self.ret = parseVariable(machine, variable)
+		ret = parseVariable(machine, variable)
+
+		range = self.argVals[0].load()
+
+		value = 0
+		if range < 0:
+			random.seed(-range)
+		elif range == 0:
+			random.seed()
+		else:
+			value = random.randint(1,range)
+
+		ret.store(value)
 		pass
 	pass
 
@@ -873,20 +936,38 @@ class Opcode_ScanTable():
 		pass
 	pass
 
-class Opcode_Not():
+class Opcode_Not_V5():
 	def call(self, machine):
 		variable = machine.readBytePC()
-		self.ret = parseVariable(machine, variable)
+		ret = parseVariable(machine, variable)
+
+		v1 = self.argVals[0].load()
+		print('Not', v1, ret)
+
+		value = ~v1&0xffff
+		ret.store(value)
 		pass
 	pass
 
 class Opcode_CallVN():
 	def call(self, machine):
+		print('###############################')
+		print('oldstack',id(machine.currentScope.stack))
+		print('CallVN', self.argVals[0], self.argVals[1:], machine.pc, None)
+		print('###############################')
+		machine.call(self.argVals[0], self.argVals[1:], machine.pc, None)
+		print('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
 class Opcode_CallVN2():
 	def call(self, machine):
+		print('###############################')
+		print('oldstack',id(machine.currentScope.stack))
+		print('CallVN2', self.argVals[0], self.argVals[1:], machine.pc, None)
+		print('###############################')
+		machine.call(self.argVals[0], self.argVals[1:], machine.pc, None)
+		print('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
@@ -921,26 +1002,64 @@ class Opcode_CheckArgCount():
 
 class Opcode_Save():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
 class Opcode_Restore():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
 class Opcode_LogShift():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
+
+		v1 = makeUnsigned(self.argVals[0].load())
+		v2 = self.argVals[1].load()
+		print('LogShift', self.argVals, ret)
+
+		if v2 < 0:
+			value = v1 >> -v2
+		else:
+			value = v1 << v2
+
+		value = makeSigned(value)
+		if value == 170:
+			print('')
+		ret.store(value)
 		pass
 	pass
 
 class Opcode_ArtShift():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
+
+		v1 = self.argVals[0].load()
+		v2 = self.argVals[1].load()
+		print('ArtShift', self.argVals, ret)
+
+		if v2 < 0:
+			value = v1 >> -v2
+		else:
+			value = v1 << v2
+
+		value = makeSigned(value)
+		if value == 170:
+			print('')
+		ret.store(value)
 		pass
 	pass
 
 class Opcode_SetFont():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
@@ -951,6 +1070,7 @@ class Opcode_DrawPicture():
 
 class Opcode_PictureData():
 	def call(self, machine):
+		cond, target = decodeJump(machine)
 		pass
 	pass
 
@@ -966,11 +1086,15 @@ class Opcode_SetMargins():
 
 class Opcode_SaveUndo():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
 class Opcode_RestoreUndo():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
@@ -981,6 +1105,8 @@ class Opcode_PrintUnicode():
 
 class Opcode_CheckUnicode():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
@@ -1006,6 +1132,8 @@ class Opcode_WindowStyle():
 
 class Opcode_GetWindowProp():
 	def call(self, machine):
+		variable = machine.readBytePC()
+		ret = parseVariable(machine, variable)
 		pass
 	pass
 
@@ -1031,6 +1159,7 @@ class Opcode_MouseWindow():
 
 class Opcode_PushStack():
 	def call(self, machine):
+		cond, target = decodeJump(machine)
 		pass
 	pass
 
@@ -1046,6 +1175,7 @@ class Opcode_PrintForm():
 
 class Opcode_MakeMenu():
 	def call(self, machine):
+		cond, target = decodeJump(machine)
 		pass
 	pass
 

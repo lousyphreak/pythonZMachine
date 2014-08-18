@@ -214,3 +214,4 @@ $RECYCLE.BIN/
 *.msp
 
 *.pyc
+/ZMachine/env

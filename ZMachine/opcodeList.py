@@ -1,7 +1,8 @@
 from opcodeCode import *
 from opcodeDecode import *
 
-opCodes = [0] * 256
+opCodes = [0] * 0x100
+opCodesExt = [0] * 0x20
 
 class Opcode_Je_SC_SC(Opcode_SC_SC, Opcode_Je):
 	pass
@@ -906,7 +907,8 @@ class Opcode_Verify_N(Opcode_N, Opcode_Verify):
 # hex 54
 opCodes[0xBD] = Opcode_Verify_N
 
-class Opcode_Extended_N(Opcode_N, Opcode_Extended):
+class Opcode_Extended_N(Opcode_Extended):
+	opCodesExt = opCodesExt
 	pass
 # hex 54
 opCodes[0xBE] = Opcode_Extended_N
@@ -1161,7 +1163,7 @@ class Opcode_ScanTable_VAR(Opcode_VAR, Opcode_ScanTable):
 	pass
 opCodes[0xF7] = Opcode_ScanTable_VAR
 
-class Opcode_Not_VAR(Opcode_VAR, Opcode_Not):
+class Opcode_Not_VAR(Opcode_VAR, Opcode_Not_V5):
 	pass
 opCodes[0xF8] = Opcode_Not_VAR
 
@@ -1194,3 +1196,113 @@ class Opcode_CheckArgCount_VAR(Opcode_VAR, Opcode_CheckArgCount):
 opCodes[0xFF] = Opcode_CheckArgCount_VAR
 
 
+
+
+
+class Opcode_Save_EXT(Opcode_Save):
+	pass
+opCodesExt[0x00] = Opcode_Save_EXT
+
+class Opcode_Restore_EXT(Opcode_Restore):
+	pass
+opCodesExt[0x01] = Opcode_Restore_EXT
+
+class Opcode_LogShift_EXT(Opcode_LogShift):
+	pass
+opCodesExt[0x02] = Opcode_LogShift_EXT
+
+class Opcode_ArtShift_EXT(Opcode_ArtShift):
+	pass
+opCodesExt[0x03] = Opcode_ArtShift_EXT
+
+class Opcode_SetFont_EXT(Opcode_SetFont):
+	pass
+opCodesExt[0x04] = Opcode_SetFont_EXT
+
+class Opcode_DrawPicture_EXT(Opcode_DrawPicture):
+	pass
+opCodesExt[0x05] = Opcode_DrawPicture_EXT
+
+class Opcode_PictureData_EXT(Opcode_PictureData):
+	pass
+opCodesExt[0x06] = Opcode_PictureData_EXT
+
+class Opcode_ErasePicture_EXT(Opcode_ErasePicture):
+	pass
+opCodesExt[0x07] = Opcode_ErasePicture_EXT
+
+class Opcode_SetMargins_EXT(Opcode_SetMargins):
+	pass
+opCodesExt[0x08] = Opcode_SetMargins_EXT
+
+class Opcode_SaveUndo_EXT(Opcode_SaveUndo):
+	pass
+opCodesExt[0x09] = Opcode_SaveUndo_EXT
+
+class Opcode_RestoreUndo_EXT(Opcode_RestoreUndo):
+	pass
+opCodesExt[0x0A] = Opcode_RestoreUndo_EXT
+
+class Opcode_PrintUnicode_EXT(Opcode_PrintUnicode):
+	pass
+opCodesExt[0x0B] = Opcode_PrintUnicode_EXT
+
+class Opcode_CheckUnicode_EXT(Opcode_CheckUnicode):
+	pass
+opCodesExt[0x0C] = Opcode_CheckUnicode_EXT
+
+opCodesExt[0x0D] = 0
+opCodesExt[0x0E] = 0
+opCodesExt[0x0F] = 0
+
+class Opcode_MoveWindow_EXT(Opcode_MoveWindow):
+	pass
+opCodesExt[0x10] = Opcode_MoveWindow_EXT
+
+class Opcode_WindowSize_EXT(Opcode_WindowSize):
+	pass
+opCodesExt[0x11] = Opcode_WindowSize_EXT
+
+class Opcode_WindowStyle_EXT(Opcode_WindowStyle):
+	pass
+opCodesExt[0x12] = Opcode_WindowStyle_EXT
+
+class Opcode_GetWindowProp_EXT(Opcode_GetWindowProp):
+	pass
+opCodesExt[0x13] = Opcode_GetWindowProp_EXT
+
+class Opcode_ScrollWindow_EXT(Opcode_ScrollWindow):
+	pass
+opCodesExt[0x14] = Opcode_ScrollWindow_EXT
+
+class Opcode_PopStack_EXT(Opcode_PopStack):
+	pass
+opCodesExt[0x15] = Opcode_PopStack_EXT
+
+class Opcode_ReadMouse_EXT(Opcode_ReadMouse):
+	pass
+opCodesExt[0x16] = Opcode_ReadMouse_EXT
+
+class Opcode_MouseWindow_EXT(Opcode_MouseWindow):
+	pass
+opCodesExt[0x17] = Opcode_MouseWindow_EXT
+
+class Opcode_PushStack_EXT(Opcode_PushStack):
+	pass
+opCodesExt[0x18] = Opcode_PushStack_EXT
+
+class Opcode_PutWindowProp_EXT(Opcode_PutWindowProp):
+	pass
+opCodesExt[0x19] = Opcode_PutWindowProp_EXT
+
+class Opcode_PrintForm_EXT(Opcode_PrintForm):
+	pass
+opCodesExt[0x1A] = Opcode_PrintForm_EXT
+
+class Opcode_MakeMenu_EXT(Opcode_MakeMenu):
+	pass
+opCodesExt[0x1B] = Opcode_MakeMenu_EXT
+
+class Opcode_PictureTable_EXT(Opcode_PictureTable):
+	pass
+opCodesExt[0x1C] = Opcode_PictureTable_EXT

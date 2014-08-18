@@ -1,7 +1,9 @@
 from struct import unpack, pack
 from opcodeList import opCodes
 import objects
+import textParser
 from screen import Screen
+from opcodeDecode import ConstValue
 
 # http://inform-fiction.org/zmachine/standards/z1point0/sect11.html
 
@@ -103,10 +105,12 @@ class ZMachine:
 	def setup(self):
 		self.pc = self.header.initPC
 		self.currentScope = RoutineScope(self, None, None, [], -1, -1)
+		textParser.init(self)
 		self.screen.init()
 		pass
 
 	def run(self):
+		val = 0
 		while True:
 			print("")
 			opCode = self.readBytePC()
@@ -116,6 +120,11 @@ class ZMachine:
 			print('opCode', opc)
 			opc.decode(self)
 			opc.call(self)
+
+			val += 1
+			val %= 20
+			if val == 0:
+				self.screen.update()
 		pass
 
 	def readByte(self, address):
@@ -127,11 +136,11 @@ class ZMachine:
 		return ret
 
 	def writeByte(self, address, value):
-		val = pack('>B', value)
+		val = pack('>B', value & 0xff)
 		self.data[address] = val[0]
 
 	def writeWord(self, address, value):
-		val = pack('>H', value)
+		val = pack('>H', value & 0xffff)
 		self.data[address+0] = val[0]
 		self.data[address+1] = val[1]
 
@@ -183,7 +192,8 @@ class ZMachine:
 
 		if targetAddress == 0:
 			print('ABORT CALL --> DEST == 0')
-			returnValue.store(0)
+			if returnValue != None:
+				returnValue.store(0)
 			return
 		address = self.unpackAddressRoutine(targetAddress)
 		print("calling", address, hex(address), 'params:', param, 'old stack:', id(self.currentScope.stack))
@@ -199,7 +209,24 @@ class ZMachine:
 		print('oldstack:', id(oldScope.stack),'new stack:', id(newScope.stack))
 
 		self.pc = oldScope.returnAddress
-		oldScope.returnValue.store(value.load())
+
+		retValue = value.load()
+		if oldScope.returnValue is not None:
+			oldScope.returnValue.store(retValue)
+
+	def jump(self, target):
+		if target == 0:
+			print('RFalse!')
+			self.ret(ConstValue(0, 1))
+			return
+		elif target == 1:
+			print('RTrue!')
+			self.ret(ConstValue(1, 1))
+			return
+
+		print('jumping!')
+		self.pc = target
+		pass
 
 	def getPropertiesLength(self):
 		if self.header.version < 4:
@@ -217,19 +244,66 @@ class ZMachine:
 		
 		return objects.Object(self, objectAddress, objectNum)
 
+	def updateStatus(self):
+		pass
+
+	def readCommand(self, textTarget, parseBuffer):
+		# reading
+		maxLen = self.readByte(textTarget)
+		if self.header.version < 5:
+			maxLen -= 1
+
+		text, timedAbort = self.screen.readText(maxLen)
+
+		offset = 0
+		if self.header.version > 4:
+			offset = self.readByte(textTarget + 1) + 1
+
+		for i in range(len(text)):
+			c = text[i]
+			self.writeByte(textTarget+offset+i, ord(c))
+
+		if self.header.version > 4:
+			self.writeByte(textTarget+1, len(text))
+
+		# parsing
+		if parseBuffer == 0:
+			return timedAbort
+		maxWords = self.readByte(parseBuffer)
+
+		decodedWords = textParser.parse(self, text)
+
+		self.writeByte(parseBuffer+1, len(decodedWords))
+
+		for i in range(len(decodedWords)):
+			dWord = decodedWords[i]
+			self.writeWord(parseBuffer+i*4+2, dWord.address)
+			self.writeByte(parseBuffer+i*4+4, dWord.numChars)
+			self.writeByte(parseBuffer+i*4+5, dWord.textPos)
+
+		return timedAbort
+
+
 def main():
-	ff = 0
+	ff = 11
 
 	if ff == 0:
 		basePath = '../'
 		fileName = 'Enchanter.z3'
-	else:
+	elif ff < 10:
 		basePath = 'F:/zork/'
 
 		if ff == 1:
 			fileName = 'zork.z3'
 		if ff == 2:
 			fileName = 'hhgg.z3'
+	elif ff < 20:
+		basePath = './'
+
+		if ff == 11:
+			fileName = 'czech.z5'
+		if ff == 12:
+			fileName = 'praxix.z5'
 
 	zm = ZMachine(basePath, fileName)
 
