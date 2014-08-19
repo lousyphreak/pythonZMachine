@@ -12,7 +12,7 @@ class Opcode_Je():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
-		print('Je',self.argVals,cond,target)
+		machine.printDebug('Je',self.argVals,cond,target)
 
 		v1 = self.argVals[0].load()
 
@@ -33,7 +33,7 @@ class Opcode_Jl():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
-		print('Jl',self.argVals,cond,target)
+		machine.printDebug('Jl',self.argVals,cond,target)
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
@@ -48,7 +48,7 @@ class Opcode_Jg():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
-		print('Jg',self.argVals,cond,target)
+		machine.printDebug('Jg',self.argVals,cond,target)
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
@@ -63,7 +63,7 @@ class Opcode_DecChk():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
-		print('DecChk', self.argVals,cond,target)
+		machine.printDebug('DecChk', self.argVals,cond,target)
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
@@ -83,7 +83,7 @@ class Opcode_IncChk():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
 
-		print('IncChk', self.argVals, cond, target)
+		machine.printDebug('IncChk', self.argVals, cond, target)
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
@@ -107,8 +107,8 @@ class Opcode_Jin():
 		v2 = self.argVals[1].load()
 
 		objectA = machine.getObject(v1)
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('Jin',objectA,v2,cond)
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('Jin',objectA,v2,cond)
 		if (objectA.parentId == v2) == cond:
 			machine.jump(target)
 	pass
@@ -132,7 +132,7 @@ class Opcode_Or():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('Or', v1, v2, ret)
+		machine.printDebug('Or', v1, v2, ret)
 
 		value = v1 | v2
 		ret.store(value)
@@ -147,7 +147,7 @@ class Opcode_And():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('And', v1, v2, ret)
+		machine.printDebug('And', v1, v2, ret)
 
 		value = v1 & v2
 		ret.store(value)
@@ -158,13 +158,13 @@ class Opcode_And():
 class Opcode_TestAttr():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('TestAttr {0} {1}'.format(self.argVals[0], self.argVals[1]))
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('TestAttr {0} {1}'.format(self.argVals[0], self.argVals[1]))
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
 		object = machine.getObject(v1)
 		attr = object.hasAttr(v2)
-		print('object.attr {0}.{1}'.format(object, attr))
+		machine.printDebug('object.attr {0}.{1}'.format(object, attr))
 
 		if attr == cond:
 			machine.jump(target)
@@ -178,8 +178,8 @@ class Opcode_SetAttr():
 		attribute = self.argVals[1].load()
 
 		object = self.machine.getObject(objectId)
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('SetAttr', object, attribute)
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('SetAttr', object, attribute)
 
 		object.setAttr(attribute)
 		pass
@@ -191,8 +191,8 @@ class Opcode_ClearAttr():
 		attribute = self.argVals[1].load()
 
 		object = self.machine.getObject(objectId)
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('ClearAttr', object, attribute)
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('ClearAttr', object, attribute)
 
 		object.clearAttr(attribute)
 		pass
@@ -204,7 +204,7 @@ class Opcode_Store():
 		v2 = self.argVals[1].load()
 		var = parseVariable(machine, v1)
 
-		print('Store',var, v2)
+		machine.printDebug('Store',var, v2)
 		var.store(v2)
 		pass
 	pass
@@ -217,8 +217,9 @@ class Opcode_InsertObj():
 		object = machine.getObject(objectId)
 		destination = machine.getObject(destinationId)
 
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('insertObj', object, 'into', destination)
+		machine.printDebug('===================================================================================')
+		machine.printDebug('InsertObj', object, 'into', destination)
+		#machine.printScreen("InsertObj {0} {1}".format(objectId, destinationId))
 		destination.insertObject(object)
 
 		pass
@@ -233,7 +234,7 @@ class Opcode_LoadW():
 		index = self.argVals[1].load()
 		value = machine.readWord(arrAddr+index*2)
 
-		print('LoadW', arrAddr, index, value, ret)
+		machine.printDebug('LoadW', self.argVals, value, ret)
 
 		ret.store(value)
 		pass
@@ -248,9 +249,9 @@ class Opcode_LoadB():
 		index = self.argVals[1].load()
 		value = machine.readByte(arrAddr+index)
 
-		print('LoadB', arrAddr, index, value, ret)
+		machine.printDebug('LoadB', self.argVals, value, ret)
 
-		ret.storeB(value)
+		ret.store(value&0xff)
 		pass
 	pass
 
@@ -264,7 +265,7 @@ class Opcode_GetProp():
 
 		object = machine.getObject(objectId)
 		propVal = object.getProp(property)
-		print('GetProp', object, property, propVal)
+		machine.printDebug('GetProp', object, property, propVal)
 
 		ret.store(propVal)
 		pass
@@ -282,7 +283,7 @@ class Opcode_GetPropAddr():
 
 		addr = object.getPropAddr(property)
 
-		print('GetPropAddr', object, property, addr)
+		machine.printDebug('GetPropAddr', object, property, addr)
 
 		ret.store(addr)
 		pass
@@ -297,6 +298,10 @@ class Opcode_GetNextProp():
 		property = self.argVals[1].load()
 
 		object = machine.getObject(objectId)
+		machine.printDebug('GetNextProp', object, property, ret)
+
+		nextProp = object.getNextProp(property)
+		ret.store(nextProp)
 		pass
 	pass
 
@@ -307,7 +312,7 @@ class Opcode_Add():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('Add', v1, v2, ret)
+		machine.printDebug('Add', v1, v2, ret)
 
 		value = v1 + v2
 		ret.store(value)
@@ -321,7 +326,7 @@ class Opcode_Sub():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('Sub', v1, v2, ret)
+		machine.printDebug('Sub', v1, v2, ret)
 
 		value = v1 - v2
 		ret.store(value)
@@ -334,7 +339,7 @@ class Opcode_Mul():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('Mul', v1, v2, ret)
+		machine.printDebug('Mul', v1, v2, ret)
 
 		value = v1 * v2
 		ret.store(value)
@@ -347,7 +352,7 @@ class Opcode_Div():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('Div', v1, v2, ret)
+		machine.printDebug('Div', v1, v2, ret)
 
 		value = int(v1 / v2)
 		ret.store(value)
@@ -358,7 +363,7 @@ class Opcode_Mod():
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
 
-		print('Mod', self.argVals, ret)
+		machine.printDebug('Mod', self.argVals, ret)
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
@@ -383,23 +388,23 @@ class Opcode_Call2S():
 	def call(self, machine):
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
-		print('###############################')
-		print('oldstack',id(machine.currentScope.stack))
-		print('Call', self.argVals[0], self.argVals[1:], machine.pc, ret)
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('Call', self.argVals[0], self.argVals[1:], machine.pc, ret)
+		machine.printDebug('###############################')
 		machine.call(self.argVals[0], self.argVals[1:], machine.pc, ret)
-		print('newstack',id(machine.currentScope.stack))
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
 class Opcode_Call2N():
 	def call(self, machine):
-		print('###############################')
-		print('oldstack',id(machine.currentScope.stack))
-		print('Call', self.argVals[0], self.argVals[1:], machine.pc, None)
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('Call', self.argVals[0], self.argVals[1:], machine.pc, None)
+		machine.printDebug('###############################')
 		machine.call(self.argVals[0], self.argVals[1:], machine.pc, None)
-		print('newstack',id(machine.currentScope.stack))
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
@@ -422,7 +427,7 @@ class Opcode_Jz():
 		cond, target = decodeJump(machine)
 
 		v1 = self.argVals[0].load()
-		print('Jz',self.argVals,cond)
+		machine.printDebug('Jz',self.argVals,cond)
 
 		if (v1==0) == cond:
 			machine.jump(target)
@@ -439,11 +444,11 @@ class Opcode_GetSibling():
 		objectId = self.argVals[0].load()
 		object = machine.getObject(objectId)
 
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('GetSibling', object, object.parentId, ret)
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('GetSibling', object, object.siblingId, ret)
 		ret.store(object.siblingId)
 
-		if (object.siblingId==0) == cond:
+		if (object.siblingId!=0) == cond:
 			machine.jump(target)
 
 		pass
@@ -458,11 +463,11 @@ class Opcode_GetChild():
 		objectId = self.argVals[0].load()
 		object = machine.getObject(objectId)
 
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('GetChild', object, object.parentId, ret)
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('GetChild', object, object.childId, ret)
 		ret.store(object.childId)
 
-		if (object.childId==0) == cond:
+		if (object.childId!=0) == cond:
 			machine.jump(target)
 		pass
 	pass
@@ -475,8 +480,8 @@ class Opcode_GetParent():
 		objectId = self.argVals[0].load()
 		object = machine.getObject(objectId)
 
-		print('---------------------------------------------------------------------------------------------------------------------')
-		print('GetParent', object, object.parentId, ret)
+		machine.printDebug('---------------------------------------------------------------------------------------------------------------------')
+		machine.printDebug('GetParent', object, object.parentId, ret)
 		ret.store(object.parentId)
 
 		pass
@@ -490,11 +495,11 @@ class Opcode_GetPropLen():
 		propertyAddress = self.argVals[0].load()
 
 		if propertyAddress == 0:
-			print('GetPropLen 0', ret)
+			machine.printDebug('GetPropLen 0', ret)
 			ret.store(0)
 		else:
 			prop = objects.Property(machine, propertyAddress)
-			print('GetPropLen', prop, prop.size, ret)
+			machine.printDebug('GetPropLen', prop, prop.size, ret)
 
 			ret.store(prop.size)
 		pass
@@ -504,7 +509,7 @@ class Opcode_Inc():
 	def call(self, machine):
 		ret = parseVariable(machine, self.argVals[0].load())
 		var = ret.load()
-		print('Inc', ret)
+		machine.printDebug('Inc', ret)
 		var += 1
 		ret.store(var)
 		pass
@@ -514,7 +519,7 @@ class Opcode_Dec():
 	def call(self, machine):
 		ret = parseVariable(machine, self.argVals[0].load())
 		var = ret.load()
-		print('Dec', ret)
+		machine.printDebug('Dec', ret)
 		var -= 1
 		ret.store(var)
 		pass
@@ -522,6 +527,10 @@ class Opcode_Dec():
 
 class Opcode_PrintAddr():
 	def call(self, machine):
+		address = self.argVals[0].load()
+		length, string = zscii.decodeString(machine, address)
+		machine.printDebug('PrintPaddr', self.argVals, address, string)
+		machine.printScreen(string)
 		pass
 	pass
 
@@ -529,11 +538,26 @@ class Opcode_Call1S():
 	def call(self, machine):
 		variable = machine.readBytePC()
 		ret = parseVariable(machine, variable)
+
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('Call1S', self.argVals[0], self.argVals[1:], machine.pc, ret)
+		machine.printDebug('###############################')
+		machine.call(self.argVals[0], self.argVals[1:], machine.pc, ret)
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
 class Opcode_RemoveObj():
 	def call(self, machine):
+		v1 = self.argVals[0].load()
+		object = machine.getObject(v1)
+		parent = machine.getObject(object.parentId)
+
+		machine.printDebug('===================================================================================')
+		machine.printDebug('RemoveObj: object #{0}.{1}'.format(v1, object.propHeaderStr))
+		#machine.printScreen("RemoveObj {0} {1}".format(v1, parent))
+		object.removeObject()
 		pass
 	pass
 
@@ -543,17 +567,17 @@ class Opcode_PrintObj():
 		object = machine.getObject(v1)
 		#object.
 		
-		print('PrintObj: object #{0}.{1}'.format(v1, object.propHeaderStr))
-		machine.screen.print(object.propHeaderStr)
+		machine.printDebug('PrintObj: object #{0}.{1}'.format(v1, object.propHeaderStr))
+		machine.printScreen(object.propHeaderStr)
 		pass
 	pass
 
 class Opcode_Ret():
 	def call(self, machine):
-		print('###############################')
-		print('Ret', self.argVals[0], machine.currentScope.returnValue, id(machine.currentScope.returnValue))
-		print('new pc:', hex(machine.currentScope.returnAddress))
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('Ret', self.argVals[0], machine.currentScope.returnValue, id(machine.currentScope.returnValue))
+		machine.printDebug('new pc:', hex(machine.currentScope.returnAddress))
+		machine.printDebug('###############################')
 		
 		machine.ret(self.argVals[0])
 		pass
@@ -562,9 +586,9 @@ class Opcode_Ret():
 class Opcode_Jump():
 	def call(self, machine):
 		target = self.argVals[0].load() - 2
-		print('jump target value:', hex(target))
+		machine.printDebug('jump target value:', hex(target))
 		target = (machine.pc + target) % 0x10000
-		print('jump target:', hex(target))
+		machine.printDebug('jump target:', hex(target))
 
 		machine.jump(target)
 		pass
@@ -576,8 +600,8 @@ class Opcode_PrintPaddr():
 		address = machine.unpackAddressPrint(pAddress)
 
 		bytes, string = zscii.decodeString(machine, address)
-		print('PrintPaddr', self.argVals, address, string)
-		machine.screen.print(string)
+		machine.printDebug('PrintPaddr', self.argVals, address, string)
+		machine.printScreen(string)
 
 		pass
 	pass
@@ -596,19 +620,19 @@ class Opcode_Load():
 class Opcode_Not():
 	def call(self, machine):
 		if machine.header.version > 4:
-			print('###############################')
-			print('oldstack',id(machine.currentScope.stack))
-			print('Call', self.argVals[0], [], machine.pc, None)
-			print('###############################')
+			machine.printDebug('###############################')
+			machine.printDebug('oldstack',id(machine.currentScope.stack))
+			machine.printDebug('Call', self.argVals[0], [], machine.pc, None)
+			machine.printDebug('###############################')
 			machine.call(self.argVals[0], [], machine.pc, None)
-			print('newstack',id(machine.currentScope.stack))
+			machine.printDebug('newstack',id(machine.currentScope.stack))
 
 		else:
 			variable = machine.readBytePC()
 			ret = parseVariable(machine, variable)
 
 			v1 = self.argVals[0].load()
-			print('Not', v1, ret)
+			machine.printDebug('Not', v1, ret)
 
 			value = ~v1&0xffff
 			ret.store(value)
@@ -621,10 +645,10 @@ class Opcode_Not():
 
 class Opcode_RTrue():
 	def call(self, machine):
-		print('###############################')
-		print('RTrue', machine.currentScope.returnValue, id(machine.currentScope.returnValue))
-		print('new pc:', hex(machine.currentScope.returnAddress))
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('RTrue', machine.currentScope.returnValue, id(machine.currentScope.returnValue))
+		machine.printDebug('new pc:', hex(machine.currentScope.returnAddress))
+		machine.printDebug('###############################')
 		
 		machine.ret(ConstValue(1, 1))
 		pass
@@ -632,10 +656,10 @@ class Opcode_RTrue():
 
 class Opcode_RFalse():
 	def call(self, machine):
-		print('###############################')
-		print('RTrue', machine.currentScope.returnValue, id(machine.currentScope.returnValue))
-		print('new pc:', hex(machine.currentScope.returnAddress))
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('RTrue', machine.currentScope.returnValue, id(machine.currentScope.returnValue))
+		machine.printDebug('new pc:', hex(machine.currentScope.returnAddress))
+		machine.printDebug('###############################')
 		
 		machine.ret(ConstValue(0, 1))
 		pass
@@ -644,20 +668,21 @@ class Opcode_RFalse():
 class Opcode_Print():
 	def call(self, machine):
 		bytes, string = zscii.decodeString(machine, machine.pc)
-		machine.screen.print(string)
+		machine.printScreen(string)
 		machine.pc += bytes
 
-		print('Print', string)
+		machine.printDebug('Print', string)
 		pass
 	pass
 
 class Opcode_PrintRet():
 	def call(self, machine):
 		bytes, string = zscii.decodeString(machine, machine.pc)
-		machine.screen.print(string)
+		machine.printScreen(string)
+		machine.printScreen("\n")
 		machine.pc += bytes
 
-		print('PrintRet', string)
+		machine.printDebug('PrintRet', string)
 		machine.ret(ConstValue(1, 1))
 		pass
 	pass
@@ -687,10 +712,10 @@ class Opcode_Restart():
 
 class Opcode_RetPopped():
 	def call(self, machine):
-		print('###############################')
-		print('RetPopped', machine.currentScope.returnValue, id(machine.currentScope.returnValue))
-		print('new pc:', hex(machine.currentScope.returnAddress))
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('RetPopped', machine.currentScope.returnValue, id(machine.currentScope.returnValue))
+		machine.printDebug('new pc:', hex(machine.currentScope.returnAddress))
+		machine.printDebug('###############################')
 		value = machine.currentScope.stack.pop()
 		machine.ret(ConstValue(value, 1))
 		pass
@@ -698,6 +723,8 @@ class Opcode_RetPopped():
 
 class Opcode_Pop():
 	def call(self, machine):
+		machine.printDebug('Pop')
+		machine.currentScope.stack.pop()
 		pass
 	pass
 
@@ -709,8 +736,8 @@ class Opcode_Quit():
 
 class Opcode_NewLine():
 	def call(self, machine):
-		machine.screen.print("\n")
-		print('NewLine')
+		machine.printScreen("\n")
+		machine.printDebug('NewLine')
 		pass
 	pass
 
@@ -722,12 +749,16 @@ class Opcode_ShowStatus():
 class Opcode_Verify():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
+		if True == cond:
+			machine.jump(target)
 		pass
 	pass
 
 class Opcode_Piracy():
 	def call(self, machine):
 		cond, target = decodeJump(machine)
+		if True == cond:
+			machine.jump(target)
 		pass
 	pass
 
@@ -740,12 +771,12 @@ class Opcode_Call():
 		variable = machine.readBytePC()
 		self.ret = parseVariable(machine, variable)
 
-		print('###############################')
-		print('oldstack',id(machine.currentScope.stack))
-		print('Call', self.argVals[0], self.argVals[1:], machine.pc, self.ret)
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('Call', self.argVals[0], self.argVals[1:], machine.pc, self.ret)
+		machine.printDebug('###############################')
 		machine.call(self.argVals[0], self.argVals[1:], machine.pc, self.ret)
-		print('newstack',id(machine.currentScope.stack))
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 
 class Opcode_StoreW():
@@ -754,7 +785,7 @@ class Opcode_StoreW():
 		index = self.argVals[1].load()
 		value = self.argVals[2].load()
 
-		print('StoreW', arrAddr, index, value)
+		machine.printDebug('StoreW', arrAddr, index, value)
 		machine.writeWord(arrAddr+index*2, value)
 
 class Opcode_StoreB():
@@ -763,7 +794,7 @@ class Opcode_StoreB():
 		index = self.argVals[1].load()
 		value = self.argVals[2].load()
 
-		print('StoreW', arrAddr, index, value)
+		machine.printDebug('StoreW', arrAddr, index, value)
 		machine.writeByte(arrAddr+index, value)
 
 class Opcode_PutProp():
@@ -774,7 +805,7 @@ class Opcode_PutProp():
 		object = machine.getObject(objectId)
 		#object.
 		
-		print('PutProp:', object, self.argVals)
+		machine.printDebug('PutProp:', object, self.argVals)
 		object.setProp(property, value)
 		pass
 	pass
@@ -805,8 +836,8 @@ class Opcode_PrintChar():
 		else:
 			t = str(chr(v1))
 
-		print('PrinChar', t)
-		machine.screen.print(t)
+		machine.printDebug('PrinChar', t)
+		machine.printScreen(t)
 
 		pass
 	pass
@@ -815,9 +846,9 @@ class Opcode_PrintNum():
 	def call(self, machine):
 		v1 = self.argVals[0].load()
 		t = str(v1)
-		machine.screen.print(t)
+		machine.printScreen(t)
 
-		print('PrintNum', t)
+		machine.printDebug('PrintNum', t)
 		pass
 	pass
 
@@ -844,7 +875,7 @@ class Opcode_Push():
 	def call(self, machine):
 		v1 = self.argVals[0].load()
 
-		print('Push', self.argVals[0])
+		machine.printDebug('Push', self.argVals[0])
 		machine.currentScope.stack.append(v1)
 		pass
 	pass
@@ -855,7 +886,7 @@ class Opcode_Pull():
 		ret = parseVariable(machine, v1)
 		val = machine.currentScope.stack.pop()
 
-		print('Pull', ret, val)
+		machine.printDebug('Pull', ret, val)
 		ret.store(val)
 		pass
 	pass
@@ -874,6 +905,13 @@ class Opcode_CallVS2():
 	def call(self, machine):
 		variable = machine.readBytePC()
 		self.ret = parseVariable(machine, variable)
+
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('CallVS2', self.argVals[0], self.argVals[1:], machine.pc, self.ret)
+		machine.printDebug('###############################')
+		machine.call(self.argVals[0], self.argVals[1:], machine.pc, self.ret)
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
@@ -942,7 +980,7 @@ class Opcode_Not_V5():
 		ret = parseVariable(machine, variable)
 
 		v1 = self.argVals[0].load()
-		print('Not', v1, ret)
+		machine.printDebug('Not', v1, ret)
 
 		value = ~v1&0xffff
 		ret.store(value)
@@ -951,23 +989,23 @@ class Opcode_Not_V5():
 
 class Opcode_CallVN():
 	def call(self, machine):
-		print('###############################')
-		print('oldstack',id(machine.currentScope.stack))
-		print('CallVN', self.argVals[0], self.argVals[1:], machine.pc, None)
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('CallVN', self.argVals[0], self.argVals[1:], machine.pc, None)
+		machine.printDebug('###############################')
 		machine.call(self.argVals[0], self.argVals[1:], machine.pc, None)
-		print('newstack',id(machine.currentScope.stack))
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
 class Opcode_CallVN2():
 	def call(self, machine):
-		print('###############################')
-		print('oldstack',id(machine.currentScope.stack))
-		print('CallVN2', self.argVals[0], self.argVals[1:], machine.pc, None)
-		print('###############################')
+		machine.printDebug('###############################')
+		machine.printDebug('oldstack',id(machine.currentScope.stack))
+		machine.printDebug('CallVN2', self.argVals[0], self.argVals[1:], machine.pc, None)
+		machine.printDebug('###############################')
 		machine.call(self.argVals[0], self.argVals[1:], machine.pc, None)
-		print('newstack',id(machine.currentScope.stack))
+		machine.printDebug('newstack',id(machine.currentScope.stack))
 		pass
 	pass
 
@@ -993,6 +1031,15 @@ class Opcode_PrintTable():
 
 class Opcode_CheckArgCount():
 	def call(self, machine):
+		cond, target = decodeJump(machine)
+
+		machine.printDebug('CheckArgCount', self.argVals, machine.currentScope.numLocals)
+
+		v1 = self.argVals[0].load()
+		if (v1 <= machine.currentScope.numLocals) == cond:
+			machine.jump(target)
+
+
 		pass
 	pass
 
@@ -1021,7 +1068,7 @@ class Opcode_LogShift():
 
 		v1 = makeUnsigned(self.argVals[0].load())
 		v2 = self.argVals[1].load()
-		print('LogShift', self.argVals, ret)
+		machine.printDebug('LogShift', self.argVals, ret)
 
 		if v2 < 0:
 			value = v1 >> -v2
@@ -1030,7 +1077,7 @@ class Opcode_LogShift():
 
 		value = makeSigned(value)
 		if value == 170:
-			print('')
+			machine.printDebug('')
 		ret.store(value)
 		pass
 	pass
@@ -1042,7 +1089,7 @@ class Opcode_ArtShift():
 
 		v1 = self.argVals[0].load()
 		v2 = self.argVals[1].load()
-		print('ArtShift', self.argVals, ret)
+		machine.printDebug('ArtShift', self.argVals, ret)
 
 		if v2 < 0:
 			value = v1 >> -v2
@@ -1051,7 +1098,7 @@ class Opcode_ArtShift():
 
 		value = makeSigned(value)
 		if value == 170:
-			print('')
+			machine.printDebug('')
 		ret.store(value)
 		pass
 	pass

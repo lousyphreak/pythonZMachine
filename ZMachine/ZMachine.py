@@ -25,13 +25,14 @@ class RoutineScope:
 					address+=2
 		
 		# initialize locals with call parameters
+		self.numLocals = len(locals)
 		for i in range(len(locals)):
 			self.locals[i] = locals[i].load()
 
 		self.stack = []
 		self.startAddress = address
 
-		print('new Scope: stack:{0}', id(self.stack))
+		machine.printDebug('new Scope: stack:{0}', id(self.stack))
 
 
 class Header:
@@ -112,12 +113,12 @@ class ZMachine:
 	def run(self):
 		val = 0
 		while True:
-			print("")
+			self.printDebug("")
 			opCode = self.readBytePC()
-			print('address:', hex(self.pc-1),'opCode:', opCode, hex(opCode))
+			self.printDebug('address:', hex(self.pc-1),'opCode:', opCode, hex(opCode))
 
 			opc = opCodes[opCode](self)
-			print('opCode', opc)
+			self.printDebug('opCode', opc)
 			opc.decode(self)
 			opc.call(self)
 
@@ -125,6 +126,7 @@ class ZMachine:
 			val %= 20
 			if val == 0:
 				self.screen.update()
+				#print(val)
 		pass
 
 	def readByte(self, address):
@@ -191,14 +193,14 @@ class ZMachine:
 		targetAddress = address.load()
 
 		if targetAddress == 0:
-			print('ABORT CALL --> DEST == 0')
+			self.printDebug('ABORT CALL --> DEST == 0')
 			if returnValue != None:
 				returnValue.store(0)
 			return
 		address = self.unpackAddressRoutine(targetAddress)
-		print("calling", address, hex(address), 'params:', param, 'old stack:', id(self.currentScope.stack))
+		self.printDebug("calling", address, hex(address), 'params:', param, 'old stack:', id(self.currentScope.stack))
 		self.currentScope = RoutineScope(self, self.currentScope, address, param, returnAddress, returnValue)
-		print('new stack:', id(self.currentScope.stack))
+		self.printDebug('new stack:', id(self.currentScope.stack))
 		self.pc = self.currentScope.startAddress
 
 	def ret(self, value):
@@ -206,7 +208,7 @@ class ZMachine:
 		newScope = self.currentScope.parent
 		self.currentScope = newScope
 
-		print('oldstack:', id(oldScope.stack),'new stack:', id(newScope.stack))
+		self.printDebug('oldstack:', id(oldScope.stack),'new stack:', id(newScope.stack))
 
 		self.pc = oldScope.returnAddress
 
@@ -216,15 +218,15 @@ class ZMachine:
 
 	def jump(self, target):
 		if target == 0:
-			print('RFalse!')
+			self.printDebug('RFalse!')
 			self.ret(ConstValue(0, 1))
 			return
 		elif target == 1:
-			print('RTrue!')
+			self.printDebug('RTrue!')
 			self.ret(ConstValue(1, 1))
 			return
 
-		print('jumping!')
+		self.printDebug('jumping!')
 		self.pc = target
 		pass
 
@@ -283,9 +285,15 @@ class ZMachine:
 
 		return timedAbort
 
+	def printScreen(self, text):
+		self.screen.print(text)
+		pass
+
+	def printDebug(self, text, *args):
+		pass
 
 def main():
-	ff = 11
+	ff = 13
 
 	if ff == 0:
 		basePath = '../'
@@ -297,12 +305,26 @@ def main():
 			fileName = 'zork.z3'
 		if ff == 2:
 			fileName = 'hhgg.z3'
-	elif ff < 20:
+	elif ff < 200:
 		basePath = './'
 
 		if ff == 11:
+			fileName = 'Ruins.z8'
+
+		if ff == 13:
+			fileName = 'czech.z3'
+		if ff == 14:
+			fileName = 'czech.z4'
+		if ff == 15:
 			fileName = 'czech.z5'
-		if ff == 12:
+		if ff == 16:
+			fileName = 'czech.z6'
+		if ff == 17:
+			fileName = 'czech.z7'
+		if ff == 18:
+			fileName = 'czech.z8'
+
+		if ff == 25:
 			fileName = 'praxix.z5'
 
 	zm = ZMachine(basePath, fileName)

@@ -69,20 +69,20 @@ class ConstValue:
 class StackValue:
 	def __init__(self, stack):
 		self.stack = stack
-		print('StackValue.__init__', self.stack, id(stack), id(self.stack))
+		#print('StackValue.__init__', self.stack, id(stack), id(self.stack))
 
 	def load(self):
-		print('StackValue.load', self.stack, id(self.stack))
+		#print('StackValue.load', self.stack, id(self.stack))
 		if len(self.stack) < 1:
-			print('LOAD FROM EMPTY STACK!')
+			#print('LOAD FROM EMPTY STACK!')
 			return 0
 
 		return self.stack.pop()
 
 	def store(self, value):
-		print('StackValue.store:', self.stack, hex(value), 'id:', id(self.stack))
+		#print('StackValue.store:', self.stack, hex(value), 'id:', id(self.stack))
 		self.stack.append(makeSigned(value, 2))
-		print('StackValue.store:', self.stack)
+		#print('StackValue.store:', self.stack)
 		pass
 
 	def storeB(self, value):
@@ -105,7 +105,7 @@ class LocalValue:
 		try:
 			return self.locals[self.offset]
 		except:
-			print("")
+			#print("")
 			return 0;
 
 	def store(self, value, bytes = 2):
@@ -121,7 +121,8 @@ class LocalValue:
 		try:
 			return 'LocalValue: L{0}({1})'.format(hex(self.offset), hex(self.locals[self.offset]))
 		except:
-			print("")
+			#print("")
+			pass
 
 class GlobalValue:
 	def __init__(self, machine, offset):
@@ -242,8 +243,6 @@ class Opcode_2OP_VAR(Opcode):
 
 class Opcode_VAR(Opcode):
 	def decode(self, machine):
-		if machine.pc == 0xfb2:
-			print('')
 		argType1 = machine.readBytePC()
 		args = decodeArgTypes(argType1)
 
@@ -269,6 +268,7 @@ class Opcode_VAR2(Opcode):
 
 		args = decodeArgTypes(argType1)
 
+		self.argVals = []
 		for arg in args:
 			if arg is VarType.LongConstant:
 				var = machine.readWordPC()

@@ -39,8 +39,8 @@ class Screen:
 	def init(self):
 		ret = pygame.init()
 
-		self.charsPerLine = 80
-		self.numLines = 35
+		self.charsPerLine = 120
+		self.numLines = 130
 		self.fontHeight = 16
 		self.fontWidth = 10
 

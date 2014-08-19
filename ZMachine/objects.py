@@ -20,10 +20,13 @@ class Property:
 
 		self.size =  machine.readByte(addr)
 		if self.size == 0:
+			self.end = True
 			return
 
+		self.end = False
+
 		decoded = False
-		if machine.header.version < 4:
+		if machine.header.version > 3:
 			if self.size & 0x80:
 				size2 = machine.readByte(addr + 1)
 				self.propId = self.size & 0x1f
@@ -34,7 +37,9 @@ class Property:
 
 		if not decoded:
 			self.propId = self.size & 0x1F
-			self.size = (self.size>>5) +1
+			self.size = (self.size>>5)
+			if machine.header.version < 4:
+				self.size += 1
 
 		self.totalLength += self.size
 
@@ -98,11 +103,13 @@ class Object:
 
 			ad = prop + 1 + l
 		self.properties = {}
+		self.propertyList = []
 		while True:
 			prop = Property(machine, ad)
-			if prop.size == 0:
+			if prop.end:
 				break
 
+			self.propertyList.append(prop.propId)
 			self.properties[prop.propId] = prop
 			ad += prop.totalLength
 			continue
@@ -166,9 +173,26 @@ class Object:
 
 		return 0
 
-	def setProp(self, propID, value):
-		self.properties[propID].setValue(value)
+	def getNextProp(self, propStart):
+		if propStart == 0:
+			if len(self.propertyList) < 1:
+				return 0
+			return self.propertyList[0]
+
+		try:
+			propPos = self.propertyList.index(propStart) + 1
+			if propPos == len(self.propertyList):
+				return 0
+			return self.propertyList[propPos]
+		except:
+			return 0
 		pass
+
+	def setProp(self, propID, value):
+		try:
+			self.properties[propID].setValue(value)
+		except:
+			pass
 
 	def insertObject(self, other):
 		oldChildId = self.childId
@@ -178,19 +202,48 @@ class Object:
 
 		pass
 
+	def removeObject(self):
+		oldParentID = self.parentId
+		self.setParent(0)
+
+		parent = self.machine.getObject(oldParentID)
+		if parent.childId == self.id:
+			parent.setChild(self.siblingId)
+			return
+
+		o = self.machine.getObject(parent.childId)
+		while True:
+			if o.siblingId == self.id:
+				o.setSibling(self.siblingId)
+				return
+			if o.siblingId == 0:
+				return
+			o = self.machine.getObject(o.siblingId)
+
+		pass
+
 	def setParent(self, parent):
 		self.parentId = parent
-		self.machine.writeByte(self.offset+4, self.parentId)
+		if self.machine.header.version < 4:
+			self.machine.writeByte(self.offset+4, self.parentId)
+		else:
+			self.machine.writeWord(self.offset+6, self.parentId)
 		pass
 
 	def setSibling(self, sibling):
 		self.siblingId = sibling
-		self.machine.writeByte(self.offset+5, self.siblingId)
+		if self.machine.header.version < 4:
+			self.machine.writeByte(self.offset+5, self.siblingId)
+		else:
+			self.machine.writeWord(self.offset+8, self.siblingId)
 		pass
 
 	def setChild(self, child):
 		self.childId = child
-		self.machine.writeByte(self.offset+6, self.childId)
+		if self.machine.header.version < 4:
+			self.machine.writeByte(self.offset+6, self.childId)
+		else:
+			self.machine.writeWord(self.offset+10, self.childId)
 		pass
 
 	def __repr__(self):
